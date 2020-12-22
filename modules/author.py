@@ -2,6 +2,7 @@ from modules.load import toImport
 from modules.story import parse as parseStory
 from modules.logging.story import isErrored
 from modules.logging.author import log as author_log
+from modules.logging.dump import html as html_dump
 
 def parse(response):
     Author_ID = int(response.css("#content_wrapper_inner > a.pull-right:first-child").attrib["href"][8:-1])

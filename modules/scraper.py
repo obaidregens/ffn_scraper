@@ -1,9 +1,10 @@
-from time import time_ns as time
-from functools import partial
-import cloudscraper
+from time import time
 import asyncio
 import atexit
 import logging
+from functools import partial
+import cloudscraper
+from modules.logging.main import log
 from modules.utils import url_join
 
 class Request:
@@ -31,12 +32,15 @@ class Request:
 
 class Scraper:
     requests_per_second = 1
-    def __init__(self,base = None):
+    def __init__(self,base = None,mobile:bool = False):
         self.base = base
+        self.__logfile = "thread-" + str(time()) + ".log"
         self.__queue = []
         self.__running = []
         self.__ended = []
-        self.__cloudscraper = cloudscraper.create_scraper()
+        self.__cloudscraper = cloudscraper.create_scraper(
+            browser={"mobile": mobile}
+        )
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False
         atexit.register(self.awaitAll)
@@ -66,18 +70,26 @@ class Scraper:
             loop.close()
     def closeRequest(self,callback,response,request,**kwargs):
         self.__running.remove(request)
-        self.__ended.append(request)
-        request.ended = time()
-        callback(response=response,request=request,**kwargs)
+        if int(response.status_code) == 200:
+            self.__ended.append(request)
+            request.ended = time()
+            callback(response=response,request=request,**kwargs)
+        else:
+            self.__queue.append(request)
     async def run(self):
         while not self.__closed or self.running() or self.queued():
             if not self.isEmpty():
                 in_last_second = self.running()
+                log("",self.__logfile)
+                log(time(),self.__logfile)
+                log(f'{in_last_second} Running',self.__logfile)
                 i = len(self.__ended)-1
                 while i >= 0 and in_last_second < Scraper.requests_per_second:
                     if (time() - self.__ended[i].ended) <= 1.01:
                         in_last_second += 1
                     i -= 1
+                log(f'{in_last_second} In last second',self.__logfile)
+                log("",self.__logfile)
                 for n in range(Scraper.requests_per_second - in_last_second):
                     req = self.__queue.pop(0)
                     req.began = time()

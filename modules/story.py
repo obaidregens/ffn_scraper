@@ -6,6 +6,7 @@ from time import time
 from data.rating_map import rating_map
 # Modules
 from modules.logging.story import error as storyError
+from modules.logging.dump import html as html_dump
 from modules.load import getUserId,getStoryIds,all_imported
 from modules.characters import find_fandom
 from modules.utils import str_word_count
@@ -20,7 +21,6 @@ import modules.terms as terms
 import modules.pairings as pairings
 
 def insert(story):
-    print(story)
     character_fandoms = {}
     characterOfFandoms = {}
     fandomOfName = {}
@@ -338,8 +338,10 @@ def parseChapter(response,storyData):
             forward["next"] = next_btn.replace('self.location=\'','').rstrip('\'')
         return forward
     else:
+        storyID = storyData["_id"]
+        html_dump(str(response.get()),f"chapterError-{storyID}-{currentChapter}.html")
         storyError(
-            storyData["_id"],
+            storyID,
             "Chapter Error",{
                 "chapter": currentChapter
             }
