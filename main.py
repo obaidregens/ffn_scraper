@@ -1,17 +1,26 @@
 def main():
+    import settings
     from scrapy.selector import Selector
     from modules.scraper import Scraper,Request
     from modules.author import parse as parseAuthor
     from modules.load import toImport
     import modules.story as Story
 
+
+    proxies = None
+    if getattr(settings,"USE_PROXY",None) is not None:
+        proxies = {"http": settings.USE_PROXY, "https": settings.USE_PROXY}
     s = Scraper(
-        base="https://www.fanfiction.net/"
+        base="https://www.fanfiction.net/",
+        browser={
+            'browser': 'chrome',
+            'platform': 'windows',
+            'mobile': False
+        },
+        proxies=proxies
     )
 
     def Chapter(response, request, storyData):
-        with open("index.html", "w+") as dump_file:
-            dump_file.write(response.text)
         sel = Selector(text=response.text)
         chap = Story.parseChapter(sel,storyData)
         if chap == False:

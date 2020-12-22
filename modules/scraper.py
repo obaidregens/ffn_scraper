@@ -32,14 +32,14 @@ class Request:
 
 class Scraper:
     requests_per_second = 1
-    def __init__(self,base = None,mobile:bool = False):
+    def __init__(self,base = None,browser:dict = None,proxies=None):
         self.base = base
         self.__logfile = "thread-" + str(time()) + ".log"
         self.__queue = []
         self.__running = []
         self.__ended = []
         self.__cloudscraper = cloudscraper.create_scraper(
-            browser={"mobile": mobile}
+            browser=browser
         )
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False

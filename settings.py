@@ -75,3 +75,5 @@ creds.ffn_authorPM5 = __ffn_creds(
         "funn": "franya"
     }
 )
+
+USE_PROXY = "http://192.81.133.72"
