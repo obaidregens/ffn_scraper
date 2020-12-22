@@ -13,16 +13,21 @@ class Request:
         url,
         callback=None,
         cookies={},
-        pass_on={}
+        pass_on={},
+        proxies=None
     ):
         self.url = url
         self.callback = Request.dummy
         if callback is not None:
             self.callback = callback
         self.cookies = cookies
+        self.proxies = proxies
         self.pass_on = pass_on
     async def start(self, cloudscraper_instance):
-        response = cloudscraper_instance.get(self.url)
+        kwargs = {}
+        if self.proxies is not None:
+            kwargs["proxies"] = self.proxies
+        response = cloudscraper_instance.get(self.url,**kwargs)
         if self.callback is not None:
             self.callback(response=response,request=self,**self.pass_on)
 
@@ -41,6 +46,8 @@ class Scraper:
         self.__cloudscraper = cloudscraper.create_scraper(
             browser=browser
         )
+        if proxies is not None:
+            self.__cloudscraper.proxies = proxies
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False
         atexit.register(self.awaitAll)

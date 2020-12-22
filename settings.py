@@ -76,4 +76,4 @@ creds.ffn_authorPM5 = __ffn_creds(
     }
 )
 
-USE_PROXY = "http://192.81.133.72"
+USE_PROXY = "http://192.81.133.72:3128"
