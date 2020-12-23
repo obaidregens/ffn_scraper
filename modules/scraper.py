@@ -65,6 +65,14 @@ class Scraper:
         return len(self.__running)
     def queued(self):
         return len(self.__queue)
+    def restartRequest(self, req):
+        try:
+            self.__running.remove(req)
+        except:
+            pass
+        req.began = 0
+        req.ended = 0
+        self.__queue.append(req)
     def close(self):
         self.__closed = True
     def awaitAll(self):
@@ -80,9 +88,21 @@ class Scraper:
         if int(response.status_code) == 200:
             self.__ended.append(request)
             request.ended = time()
-            callback(response=response,request=request,**kwargs)
+            try:
+                callback(response=response,request=request,**kwargs)
+            except Exception as e:
+                self.restartRequest(request)
+                log(f"""
+
+                Caught an Exception
+                {e}
+                with request callback
+                {request}
+                {request.url}
+                
+                """)
         else:
-            self.__queue.append(request)
+            self.restartRequest(request)
     async def run(self):
         while not self.__closed or self.running() or self.queued():
             if not self.isEmpty():
@@ -101,5 +121,17 @@ class Scraper:
                     req = self.__queue.pop(0)
                     req.began = time()
                     self.__running.append(req)
-                    await req.start(self.__cloudscraper)
+                    try:
+                        await req.start(self.__cloudscraper)
+                    except Exception as e:
+                        self.restartRequest(req)
+                        log(f"""
+
+                        Caught Exception
+                        {e}
+                        while getting
+                        {req}
+                        {req.url}
+                        
+                        """)
             await asyncio.sleep(0.1)

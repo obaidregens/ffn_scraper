@@ -13,8 +13,11 @@ db = connection.cursor()
 def placeholder(l):
     return ",".join(['%s'] * l )
 
-def insert(table,insertData):
-    sql = "INSERT INTO " + table + " (" + ",".join(insertData.keys()) + ")" + " VALUES (" + placeholder(len(insertData)) + ")"
+def insert(table,insertData,insertIgnore:bool=False):
+    ignoreVal = ""
+    if insertIgnore:
+        ignoreVal = "IGNORE"
+    sql = "INSERT " + ignoreVal + " INTO " + table + " (" + ",".join(insertData.keys()) + ")" + " VALUES (" + placeholder(len(insertData)) + ")"
     db.execute(sql,list( insertData.values()))
     connection.commit()
     return db.lastrowid

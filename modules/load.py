@@ -1,4 +1,6 @@
-from modules.mysql_connection import db 
+import settings
+from modules.mysql_connection import db,placeholder
+from modules.logging.main import make_way
 
 sql_cmd = """
 SELECT
@@ -14,6 +16,7 @@ WHERE import_status IN ('pending','live','reimport')
 GROUP BY CONCAT(a.import_story,"-",a.story_id)
 """
 db.execute(sql_cmd)
+
 toImport = {}
 for row in db.fetchall():
     row = list(row)
@@ -32,9 +35,42 @@ for row in db.fetchall():
         "chapters": chapters
     }
 
+sql_cmd = """
+SELECT connection_user,user_id
+FROM user_connections
+"""
+if len(toImport) > 0:
+    sql_cmd += f"WHERE connection_user NOT IN ({placeholder(len(toImport))})"
+db.execute(sql_cmd,list(toImport.keys()))
+for row in db.fetchall():
+    toImport[int(row[0])] = {
+        "stories": {},
+        "user_id": int(row[1])
+    }
+
+
 all_imported = []
 
-def getStoryIds(ffn_user):
-    return toImport[int(ffn_user)]["stories"].keys()
-def getUserId(ffn_user):
-    return toImport[int(ffn_user)]["user_id"]
+def getCurrent():
+    fn = "cache/authors-load.json"
+    n = getattr(settings,"AUTHOR_LOAD_CHUNK",50)
+    
+    make_way(fn)
+    try:
+        with open(fn,"r") as fp:
+            authorIds = list(map(int,fp.readlines()))
+    except Exception:
+        authorIds = []
+    
+    newAuthors = list(set(toImport.keys()) - set(authorIds))[:n]
+    for i in range(len(newAuthors),min(n,len(authorIds))):
+        newAuthors.append(authorIds.pop())
+
+    with open(fn,"w+") as fp:
+        fp.write("\n".join(map(str,authorIds + newAuthors)))
+    
+    return newAuthors
+def getStoryIds(_ffn_user):
+    return toImport[int(_ffn_user)]["stories"].keys()
+def getUserId(_ffn_user):
+    return toImport[int(_ffn_user)]["user_id"]

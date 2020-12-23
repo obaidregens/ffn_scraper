@@ -5,7 +5,7 @@ from time import time
 # Data
 from data.rating_map import rating_map
 # Modules
-from modules.logging.story import error as storyError
+from modules.logging.story import error as storyError,success as storySuccess
 from modules.logging.dump import html as html_dump
 from modules.load import getUserId,getStoryIds,all_imported
 from modules.characters import find_fandom
@@ -40,7 +40,7 @@ def insert(story):
         fandomOfName[fandomName] = fandom
         for characterName in story["Tags"].get("All Characters",[]):
             if characterName not in fandom["characters"]:
-               continue
+                continue
             character_fandoms[characterName] = fandom
             if (fandomName not in characterOfFandoms):
                 characterOfFandoms[fandomName] = []
@@ -246,6 +246,7 @@ def insert(story):
         WHERE post_id=%s AND meta_key="last_edited"
         """,[current_time,storyID])
     sql_connection.commit()
+    storySuccess(storyID)
 
 def parse(storyBlock):
     ID = int(storyBlock.css("a.stitle::attr(href)").get().split('/')[2])
@@ -306,6 +307,7 @@ def parse(storyBlock):
     return story_data
 
 def parseChapter(response,storyData):
+
     cleaner = clean.Cleaner(safe_attrs_only=True, safe_attrs=set(["style"]),page_structure=False)
 
     isCrossover = response.css('#pre_story_links > span > img[src="//ff74.b-cdn.net/static/fcons/arrow-switch.png"]').get() is not None
@@ -347,3 +349,18 @@ def parseChapter(response,storyData):
             }
         )
         return False
+
+def addNewRow(storyData):
+    dbInsert("import_stories",{
+        "import_user": storyData["Author ID"],
+        "import_from": "ffn",
+        "user_id": getUserId(storyData["Author ID"]),
+        "story_id": 0,
+        "import_story": storyData["_id"],
+        "import_status": "not_imported",
+        "request_time": 0,
+        "import_time": int(time()),
+        "import_favs": storyData["Tags"].get("Favs",0),
+        "import_follows": storyData["Tags"].get("Follows",0),
+        "import_title": storyData["Title"]
+    },insertIgnore=True)

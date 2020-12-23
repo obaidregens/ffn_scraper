@@ -3,7 +3,7 @@ def main():
     from scrapy.selector import Selector
     from modules.scraper import Scraper,Request
     from modules.author import parse as parseAuthor
-    from modules.load import toImport
+    from modules.load import getCurrent
     import modules.story as Story
 
 
@@ -43,7 +43,7 @@ def main():
                 callback=Chapter
             ))
 
-    author_urls = [ ("https://www.fanfiction.net/u/" + str(author_ID) ) for author_ID in toImport.keys() ]
+    author_urls = [ ("https://www.fanfiction.net/u/" + str(author_ID) ) for author_ID in getCurrent() ]
     for author_url in author_urls:
         s.add(Request(
             url=author_url,

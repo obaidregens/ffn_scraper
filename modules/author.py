@@ -1,8 +1,7 @@
 from modules.load import toImport
-from modules.story import parse as parseStory
+from modules.story import parse as parseStory,addNewRow as addStory
 from modules.logging.story import isErrored
 from modules.logging.author import log as author_log
-from modules.logging.dump import html as html_dump
 
 def parse(response):
     Author_ID = int(response.css("#content_wrapper_inner > a.pull-right:first-child").attrib["href"][8:-1])
@@ -16,6 +15,7 @@ def parse(response):
         storyData["Author ID"] = Author_ID
         storyData["Author Name"] = Author_Name
         if storyData["_id"] not in Author["stories"]:
+            addStory(storyData)
             continue
         Story = Author["stories"][storyData["_id"]]
         
@@ -26,10 +26,10 @@ def parse(response):
             storyData["Reimport"] = True
             chapterStartAt = 1
 
-        storyData["Existing"] = True
-        if Story["status"] == "pending":
-            storyData["Existing"] = False
-
+        storyData["Existing"] = False
+        if Story["status"] != "pending":
+            storyData["Existing"] = int(Story["story_id"])
+        
         storyData["chapterStartAt"] = chapterStartAt
         if chapterStartAt > storyData["Tags"]["Chapters"]:
             continue
