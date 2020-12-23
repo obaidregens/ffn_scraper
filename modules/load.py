@@ -43,7 +43,11 @@ if len(toImport) > 0:
     sql_cmd += f"WHERE connection_user NOT IN ({placeholder(len(toImport))})"
 db.execute(sql_cmd,list(toImport.keys()))
 for row in db.fetchall():
-    toImport[int(row[0])] = {
+    try:
+        ffn_user_id = int(row[0])
+    except:
+        continue
+    toImport[ffn_user_id] = {
         "stories": {},
         "user_id": int(row[1])
     }

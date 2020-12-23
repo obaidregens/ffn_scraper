@@ -353,8 +353,8 @@ def parseChapter(response,storyData):
 
 def addNewRow(storyData):
     log(f"""
-    Added UnImported Row of Story
-    {storyData["_id"]}
+        Added UnImported Row of Story
+        {storyData["_id"]}
     """)
     dbInsert("import_stories",{
         "import_user": storyData["Author ID"],
