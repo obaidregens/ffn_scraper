@@ -7,6 +7,7 @@ from data.rating_map import rating_map
 # Modules
 from modules.logging.story import error as storyError,success as storySuccess
 from modules.logging.dump import html as html_dump
+from modules.logging.main import log
 from modules.load import getUserId,getStoryIds,all_imported
 from modules.characters import find_fandom
 from modules.utils import str_word_count
@@ -351,6 +352,10 @@ def parseChapter(response,storyData):
         return False
 
 def addNewRow(storyData):
+    log(f"""
+    Added UnImported Row of Story
+    {storyData["_id"]}
+    """)
     dbInsert("import_stories",{
         "import_user": storyData["Author ID"],
         "import_from": "ffn",

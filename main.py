@@ -1,53 +1,22 @@
-def main():
-    import settings
-    from scrapy.selector import Selector
-    from modules.scraper import Scraper,Request
-    from modules.author import parse as parseAuthor
-    from modules.load import getCurrent
-    import modules.story as Story
-
-
-    proxies = None
-    if getattr(settings,"USE_PROXY",None) is not None:
-        proxies = {"http": settings.USE_PROXY, "https": settings.USE_PROXY}
-    s = Scraper(
-        base="https://www.fanfiction.net/",
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'mobile': False
-        },
-        proxies=proxies
-    )
-
-    def Chapter(response, request, storyData):
-        sel = Selector(text=response.text)
-        chap = Story.parseChapter(sel,storyData)
-        if chap == False:
-            return
-        if chap["next"] == False:
-            Story.insert(chap["storyData"])
-        else:
-            s.follow(Request(
-                url=chap["next"],
-                callback=Chapter,
-                pass_on={"storyData": storyData}
-            ))
-    def Authors(response, request):
-        sel = Selector(text=response.text)
-        stories = parseAuthor(sel)
-        for story in stories:
-            s.follow(Request(
-                url=story["url"],
-                pass_on={"storyData": story["story"]},
-                callback=Chapter
-            ))
-
-    author_urls = [ ("https://www.fanfiction.net/u/" + str(author_ID) ) for author_ID in getCurrent() ]
-    for author_url in author_urls:
-        s.add(Request(
-            url=author_url,
-            callback=Authors
-        ))
 if __name__ == "__main__":
-    main()
+    from sys import argv
+    from os import listdir
+    from importlib import import_module
+
+    available = []
+    for fn in listdir("scrapers"):
+        if fn[-3:] == ".py" and fn != ".py":
+            available.append(fn[:-3])
+    if len(available) < 1:
+        raise Exception("No Scrapers defined!")
+    opt = ""
+    if len(argv) > 1:
+        opt = argv[1]
+    while opt not in available:
+        opt = input("Scraper?")
+
+    module = import_module("scrapers." + opt)
+    if not hasattr(module,"main"):
+        raise Exception("Scraper has no 'main' function defined")
+
+    module.main()
