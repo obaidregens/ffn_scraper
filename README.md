@@ -13,4 +13,4 @@
 
 4. Modify settings.py
 
-5. Run `main.py`
+5. Run `python3 main.py` optionally specifiying a scraper after, for example: `python3 main.py importer`

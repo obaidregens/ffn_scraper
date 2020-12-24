@@ -29,10 +29,10 @@ def error(storyID,err,meta = {}):
         errCache.append(int(storyID))
     with open(errFile,"a+") as dump_file:
         dump_file.write(json.dumps({
-        "storyID": int(storyID),
-        "err": str(err),
-        "meta": meta
-    }))
+            "storyID": int(storyID),
+            "err": str(err),
+            "meta": meta
+        }))
 
     meta = json.dumps(meta)
     log(f"""

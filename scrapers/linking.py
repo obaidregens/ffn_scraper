@@ -1,0 +1,125 @@
+# import scrapy
+# import mysql.connector
+# import json
+# import time
+# import ff_archive.spiders.crawl_settings as crawl_settings
+# settings = crawl_settings.settings()
+
+# # SQL get unverified
+# sql_connection = mysql.connector.connect(
+#   host = "localhost",
+#   user = settings.db["user"],
+#   password = settings.db["password"],
+#   database = settings.db["name"],
+#   port = settings.db.get("port",3306)
+# )
+# db = sql_connection.cursor()
+
+# db.execute("SELECT verification_ID, connection_user FROM user_connections WHERE connection_from = 'ffn' AND status = 'unverified'")
+# user_v_ids = dict(db.fetchall())
+# user_codes = {}
+# if (len(user_v_ids) > 0):
+#     db.execute("SELECT ID, code, issued FROM verification_codes WHERE ID IN (" + ",".join(map(str,user_v_ids.keys())) + ")")
+#     _t = int(time.time())
+#     for code_tuple in db.fetchall():
+#         if _t - int(code_tuple[2]) > (60 * 80):
+#             continue
+#         userid = user_v_ids[code_tuple[0]]
+#         user_codes[userid] = {
+#             "ID": code_tuple[0],
+#             "code": code_tuple[1],
+#         }
+
+# def verify_connection(user,code_ID):
+#     db.execute(
+#         "SELECT ID,user_id FROM user_connections WHERE connection_user = %s AND connection_from = %s AND status = %s AND verification_ID = %s",
+#         [user, 'ffn', 'unverified',code_ID]
+#     )
+#     connection_row = db.fetchone()
+#     db.execute(
+#         "UPDATE user_connections SET status = %s,link_timestamp = %s WHERE ID = %s",
+#         ['verified', str(_t),str(connection_row[0])]
+#     )
+#     db.execute(
+#         """
+#         INSERT INTO notifications
+#             (user_id,notification_type,type_of,type_of_id,type_by,type_by_id,email_status,timestamp)
+#         VALUES
+#             (%s, %s, %s, %s, %s, %s, %s, %s)
+#         """,
+#         [connection_row[1],'account_verified','user',connection_row[1],'ffn_user',user,'none',time.time()]
+#     )
+#     sql_connection.commit()
+#     db.execute(
+#         "SELECT post_id FROM wp_postmeta WHERE meta_key = 'ffn_author_id' AND meta_value = %s",
+#         [user]
+#     )
+#     metas = db.fetchall()
+#     if (len(metas) < 1):
+#         return
+#     book_ids = []
+#     for meta in metas:
+#         book_ids.append(str(meta[0]))
+    
+#     if len(book_ids) > 0:
+#         db.execute(
+#             "UPDATE wp_posts SET post_author = %s WHERE ID IN(" + ",".join(['%s'] * len(book_ids)) + ")",
+#             [str(connection_row[1])] + list(map(str,book_ids))
+#         )
+#     sql_connection.commit()
+
+# class ffnVerification(scrapy.Spider):
+#     name = "ffn_verification"
+#     start_urls = ["https://www.fanfiction.net/"]
+#     inbox_url = '/pm2/inbox.php'
+#     login_url = '/login.php?cache=bust'
+#     def parse(self, response):
+#         yield scrapy.Request(
+#             response.urljoin( self.inbox_url ),
+#             callback = self.inbox,
+#             cookies = settings.creds["ffn"]["cookies"]
+#         )
+#     def inbox(self, response):
+#         if (response.css('.gui_warning > a[href^="/login"]').get() is not None):
+#             yield scrapy.Request(
+#                 response.urljoin( self.login_url ),
+#                 callback = self.login,
+#             )
+#         else:
+#             conversation_links = response.css('#content_wrapper_inner > table .bubbledNNormal > a:nth-of-type(2)')
+#             yield from response.follow_all(
+#                 conversation_links,
+#                 callback = self.conversation,
+#                 cookies = settings.creds["ffn"]["cookies"]
+#             )
+            
+#     def conversation(self, response):
+#         last_msg = response.css('.round8.bubbledRight')[-1]
+#         code = last_msg.xpath('img[1]/following-sibling::text()').get()
+#         Author_ID = response.css('#gui_table2i > tbody > tr:nth-child(2) > td:nth-child(2) > a:nth-of-type(1)::attr(href)').get()[3:].rstrip('/')
+#         if (Author_ID in user_codes ):
+#             print('Request for user ID exists')
+#             if (user_codes[Author_ID]["code"] == code):
+#                 print('Code Matches')
+#                 verify_connection(Author_ID, user_codes[Author_ID]["ID"])
+#             else:
+#                 print('Code Invalid')
+
+#     def set_new_cookies(self, response):
+#         settings.creds["ffn"]["cookies"] = response.headers.getlist('Set-Cookie')
+#         settings.save()
+#         yield scrapy.Request(
+#             response.urljoin( self.inbox_url ),
+#             callback = self.inbox,
+#             cookies = settings.creds["ffn"]["cookies"]
+#         )
+#     def login(self, response):
+#         return scrapy.FormRequest.from_response(
+#             response,
+#             formname = 'login',
+#             formdata = {
+#                 'email'     : settings.creds["ffn"]["email"],
+#                 'password'  : settings.creds["ffn"]["password"]
+#             },
+#             callback = self.set_new_cookies
+#         )
