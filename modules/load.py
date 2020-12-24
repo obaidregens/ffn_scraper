@@ -68,7 +68,7 @@ def getCurrent():
     
     newAuthors = list(set(toImport.keys()) - set(authorIds))[:n]
     for i in range(len(newAuthors),min(n,len(authorIds))):
-        newAuthors.append(authorIds.pop())
+        newAuthors.append(authorIds.pop(0))
 
     with open(fn,"w+") as fp:
         fp.write("\n".join(map(str,authorIds + newAuthors)))
