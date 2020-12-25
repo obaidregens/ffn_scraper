@@ -1,10 +1,13 @@
 def main():
     import settings
     from scrapy.selector import Selector
-    from modules.scraper import Scraper,Request
     from modules.author import parse as parseAuthor
     from modules.load import getCurrent
     import modules.story as Story
+    from plugins.cloudscraper import (
+        CloudscraperRequest as Request,
+        CloudscraperScraper as Scraper
+    )
 
     proxies = None
     if getattr(settings,"USE_PROXY",None) is not None:

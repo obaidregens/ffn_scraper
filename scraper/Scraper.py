@@ -3,51 +3,19 @@ import asyncio
 import atexit
 import logging
 from functools import partial
-import cloudscraper
 from modules.logging.main import log
 from modules.utils import url_join
-
-class Request:
-    def __init__(
-        self,
-        url,
-        callback=None,
-        cookies={},
-        pass_on={},
-        proxies=None
-    ):
-        self.url = url
-        self.callback = Request.dummy
-        if callback is not None:
-            self.callback = callback
-        self.cookies = cookies
-        self.proxies = proxies
-        self.pass_on = pass_on
-    async def start(self, cloudscraper_instance):
-        kwargs = {}
-        if self.proxies is not None:
-            kwargs["proxies"] = self.proxies
-        response = cloudscraper_instance.get(self.url,**kwargs)
-        if self.callback is not None:
-            self.callback(response=response,request=self,**self.pass_on)
-
-    @classmethod
-    def dummy(self,response,request,**kwargs):
-        pass
+from scraper import Request
+import traceback
 
 class Scraper:
     requests_per_second = 1
-    def __init__(self,base = None,browser:dict = None,proxies=None):
+    def __init__(self,base = None):
         self.base = base
         self.__logfile = "thread-" + str(time()) + ".log"
         self.__queue = []
         self.__running = []
         self.__ended = []
-        self.__cloudscraper = cloudscraper.create_scraper(
-            browser=browser
-        )
-        if proxies is not None:
-            self.__cloudscraper.proxies = proxies
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False
         atexit.register(self.awaitAll)
@@ -99,10 +67,15 @@ class Scraper:
                 with request callback
                 {request}
                 {request.url}
+
+                Traceback:
+                {traceback.format_exc()}
                 
-                """)
+                """,filename="exceptions.log")
         else:
             self.restartRequest(request)
+    async def startRequest(self,request):
+        request.start()
     async def run(self):
         while not self.__closed or self.running() or self.queued():
             if not self.isEmpty():
@@ -122,7 +95,7 @@ class Scraper:
                     req.began = time()
                     self.__running.append(req)
                     try:
-                        await req.start(self.__cloudscraper)
+                        await self.startRequest(req)
                     except Exception as e:
                         self.restartRequest(req)
                         log(f"""
@@ -132,6 +105,9 @@ class Scraper:
                         while getting
                         {req}
                         {req.url}
-                        
-                        """)
+
+                        Traceback:
+                        {traceback.format_exc()}
+
+                        """,filename="exceptions.log")
             await asyncio.sleep(0.1)

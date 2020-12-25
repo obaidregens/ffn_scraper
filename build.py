@@ -15,7 +15,9 @@ def main():
             "requirements.txt",
             "modules",
             "data",
-            "scrapers"
+            "crawlers",
+            "scraper",
+            "plugins"
         ]
         if "__pycache__" in path: return False
         for f in toUpload:

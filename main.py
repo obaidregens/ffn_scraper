@@ -4,19 +4,19 @@ if __name__ == "__main__":
     from importlib import import_module
 
     available = []
-    for fn in listdir("scrapers"):
+    for fn in listdir("crawlers"):
         if fn[-3:] == ".py" and fn != ".py":
             available.append(fn[:-3])
     if len(available) < 1:
-        raise Exception("No Scrapers defined!")
+        raise Exception("No Crawlers defined!")
     opt = ""
     if len(argv) > 1:
         opt = argv[1]
     while opt not in available:
-        opt = input("Scraper?")
+        opt = input("Crawler?")
 
-    module = import_module("scrapers." + opt)
+    module = import_module("crawlers." + opt)
     if not hasattr(module,"main"):
-        raise Exception("Scraper has no 'main' function defined")
+        raise Exception("Crawler has no 'main' function defined")
 
     module.main()
