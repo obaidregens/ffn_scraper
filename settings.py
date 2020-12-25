@@ -77,3 +77,4 @@ creds.ffn_authorPM5 = __ffn_creds(
 )
 
 USE_PROXY = "http://192.81.133.72:3128"
+LINKING_FLARESOLVERR_PROXY = "http://192.46.223.28:8191/v1"

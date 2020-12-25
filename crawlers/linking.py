@@ -11,8 +11,8 @@ def main():
         FlaresolverrScraper as Scraper,
         FlaresolverrRequest as Request
     )
-    from settings import creds
-    cookies = creds.ffn.cookies
+    import settings
+    cookies = settings.creds.ffn.cookies
 
     t = time()
     db.execute(
@@ -27,6 +27,10 @@ def main():
     )
     user_codes = {}
     for row in db.fetchall():
+        try:
+            int(row[1])
+        except: continue
+        row = list(row)
         code = row.pop(-1)
         ID,ffn_user,user_id = map(int,row)
         user_codes[ffn_user] = {
@@ -37,17 +41,17 @@ def main():
 
     def verify(user,code):
         fn = "verifications.log"
-        log(f"""
-        Verifying connection for user {user} with code {code}""",fn)
+        log("")
+        log(f"Verifying connection for user {user} with code {code}",fn)
         user = int(user)
         if user not in user_codes:
-            log("""Verification request for user does not exist
-            """,fn)
+            log("Verification request for user does not exist",fn)
+            log("")
             return False
         realCode = user_codes[user]["code"]
         if realCode != code:
-            log(f"""The actual code is {realCode}, rejected.
-            """,fn)
+            log(f"The actual code is {realCode}, rejected.",fn)
+            log("")
             return False
         
         db.execute(
@@ -71,12 +75,12 @@ def main():
             "timestamp": time()
         })
 
-        log("""Succesfully Verified!
-        """,fn)
+        log("Succesfully Verified!",fn)
+        log("")
         return True
 
     s = Scraper(
-        "http://192.46.223.28:8191/v1",
+        getattr(settings,"LINKING_FLARESOLVERR_PROXY",None),
         base="https://www.fanfiction.net/"
     )
     def Conversation(response, request):
