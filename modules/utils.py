@@ -18,4 +18,9 @@ def book_ids_from_links(book_link):
 def stripslashes(string):
 	return string.strip("/\\")
 def url_join(*args):
-	return "/".join(map(stripslashes,args))
+	joined = "/".join(map(stripslashes,args))
+	if args[0][0] == "/":
+		joined = "/" + joined
+	if args[-1][-1] == "/":
+		joined = joined + "/"
+	return joined

@@ -32,7 +32,7 @@ def error(storyID,err,meta = {}):
             "storyID": int(storyID),
             "err": str(err),
             "meta": meta
-        }))
+        }) + "\n")
 
     meta = json.dumps(meta)
     log(f"""

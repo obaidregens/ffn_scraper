@@ -2,15 +2,16 @@
 import lxml.html.clean as clean
 from datetime import datetime
 from time import time
+import json
 # Data
 from data.rating_map import rating_map
 # Modules
 from modules.logging.story import error as storyError,success as storySuccess
 from modules.logging.dump import html as html_dump
-from modules.logging.main import log
+from modules.logging.main import log,make_way
 from modules.load import getUserId,getStoryIds,all_imported
 from modules.characters import find_fandom
-from modules.utils import str_word_count
+from modules.utils import str_word_count,url_join
 # SQL
 from modules.mysql_connection import (
     db,
@@ -20,6 +21,23 @@ from modules.mysql_connection import (
 )
 import modules.terms as terms
 import modules.pairings as pairings
+import settings
+
+def notify(chapter_id):
+    site_dir = getattr(settings,"SITE_DIR",None)
+    start_time = getattr(settings,"START_TIME",time())
+    if site_dir is None:
+        log("No SITE_DIR specified")
+        return False
+    fn = make_way(url_join(site_dir,f"/temp_notifications/notifications-{start_time}.jsonl"))
+    print(fn)
+    with open(fn,"a+") as fdump:
+        json_object = json.dumps({
+            "chapter_id": chapter_id,
+            "time_added": time()
+        })
+        fdump.write(json_object + "\n")
+    
 
 def insert(story):
     character_fandoms = {}
@@ -192,6 +210,7 @@ def insert(story):
                 })
                 metaVal.append((chapter_id,'word-count',chapter["wordCount"]))
                 metaVal.append(( chapter_id, 'chapter_order', chapterIndex ))
+                notify(chapter_id)
             chapterIndex += 1
     else:
         # Chapter
@@ -209,6 +228,7 @@ def insert(story):
             metaVal.append((chapterID,'word-count',chapter["wordCount"]))
             metaVal.append((chapterID,'chapter_order',chapterIndex))
             chapterIndex += 1
+            notify(chapterID)
     
     # Insert Story and Chapter Meta
     if story["Existing"] == False:
