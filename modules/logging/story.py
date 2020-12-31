@@ -1,8 +1,9 @@
 import json
-from modules.logging.main import log,path
+from modules.logging.main import log,make_way
+from modules.logging.cache import path
 
 errCache = None
-errFile = path("errored_stories.cache")
+errFile = make_way(path("errored_stories.cache"))
 def isErrored(storyID):
     global errCache
     if errCache is None:

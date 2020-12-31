@@ -1,6 +1,7 @@
 import settings
 from modules.mysql_connection import db,placeholder
 from modules.logging.main import make_way
+from modules.logging.cache import path as cache_path
 
 sql_cmd = """
 SELECT
@@ -56,10 +57,9 @@ for row in db.fetchall():
 all_imported = []
 
 def getCurrent():
-    fn = "cache/authors-load.json"
+    fn = make_way(cache_path("authors-load.json"))
     n = getattr(settings,"AUTHOR_LOAD_CHUNK",50)
     
-    make_way(fn)
     try:
         with open(fn,"r") as fp:
             authorIds = list(map(int,fp.readlines()))
