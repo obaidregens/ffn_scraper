@@ -7,14 +7,16 @@ from modules.logging.main import log
 from modules.utils import url_join
 from scraper import Request
 import traceback
+from pprint import pprint
 
 class Scraper:
-    requests_per_second = 1
+    requests_per_second = 4
     def __init__(self,base = None):
         self.base = base
         self.__logfile = "thread-" + str(time()) + ".log"
         self.__queue = []
         self.__running = []
+        self.__calling = []
         self.__ended = []
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False
@@ -33,6 +35,8 @@ class Scraper:
         return len(self.__running)
     def queued(self):
         return len(self.__queue)
+    def called(self):
+        return len(self.__calling)
     def restartRequest(self, req):
         try:
             self.__running.remove(req)
@@ -57,8 +61,14 @@ class Scraper:
             self.__ended.append(request)
             request.ended = time()
             try:
+                self.__calling.append(request)
                 callback(response=response,request=request,**kwargs)
+                self.__calling.remove(request)
             except Exception as e:
+                
+                try: self.__calling.remove(request)
+                except Exception as e: pass
+
                 self.restartRequest(request)
                 log(f"""
 
@@ -77,7 +87,7 @@ class Scraper:
     async def startRequest(self,request):
         request.start()
     async def run(self):
-        while not self.__closed or self.running() or self.queued():
+        while not self.__closed or self.running() or self.queued() or self.called():
             if not self.isEmpty():
                 in_last_second = self.running()
                 log("",self.__logfile)
@@ -91,11 +101,13 @@ class Scraper:
                 log(f'{in_last_second} In last second',self.__logfile)
                 log("",self.__logfile)
                 for n in range(Scraper.requests_per_second - in_last_second):
+                    if len(self.__queue) < 1:
+                        break
                     req = self.__queue.pop(0)
                     req.began = time()
                     self.__running.append(req)
                     try:
-                        await self.startRequest(req)
+                        req.running_task = asyncio.get_event_loop().create_task(self.startRequest(req))
                     except Exception as e:
                         self.restartRequest(req)
                         log(f"""

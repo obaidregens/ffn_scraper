@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from time import time
 
 connection = sqlite3.connect("data/UserData.db")
 db = connection.cursor()
@@ -7,15 +8,9 @@ db = connection.cursor()
 db.execute("SELECT ffn_user_id from ffn_scraped")
 existingAuthors = [int(tup[0]) for tup in db.fetchall()]
 
-db.execute("SELECT ffn_user_id from ffn_scraped WHERE sent != 0")
-sentAuthors = [int(tup[0]) for tup in db.fetchall()]
-
 current = []
 def shouldScrape(AuthorID):
     return (int(AuthorID) not in existingAuthors) and (int(AuthorID) not in current)
-
-def shouldMessage(AuthorID):
-    return int(AuthorID) not in sentAuthors
 
 def startScrape(AuthorID):
     current.append(int(AuthorID))
@@ -33,3 +28,20 @@ def insert(table,insertData):
 
 def insertScrape(insertData):
     insert("ffn_scraped",insertData)
+
+def toMessage():
+    db.execute("""
+    SELECT ffn_user_id,ffn_username FROM ffn_scraped
+    WHERE sent = 0
+    AND (
+        total_favs >= 350
+        OR total_follows >= 350
+    )
+    """)
+    return dict([[int(tup[0]),tup[1]] for tup in db.fetchall()])
+
+def sendUser(AuthorId):
+    sql = f"UPDATE ffn_scraped SET sent={time()} WHERE ffn_user_id=?"
+    db.execute(sql,[str(AuthorId)])
+    connection.commit()
+    return AuthorId

@@ -278,9 +278,10 @@ def parse(storyBlock):
     if raw_tags_string[:12] == "Crossover - ":
         raw_tags_string = raw_tags_string[12:]
     # Remove Fandom
-    raw_tags_string = raw_tags_string[len(storyBlock.attrib["data-category"].replace("\\'","'")) + len(" - "):]
+    fixed_cat = storyBlock.attrib["data-category"].replace("\\'","'").replace("  "," ")
+    raw_tags_string = raw_tags_string[len(fixed_cat) + len(" - "):]
 
-    raw_tags = raw_tags_string.split(' - ')    
+    raw_tags = raw_tags_string.split(' - ')
     tags = {}
 
     tags['Language'] = raw_tags.pop(1)

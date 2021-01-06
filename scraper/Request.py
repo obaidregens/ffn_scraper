@@ -23,6 +23,10 @@ class Request:
         response = self.get_response(*args,**kwargs)
         if self.callback is not None:
             self.callback(response=response,request=self,**self.pass_on)
+    def __str__(self):
+        return self.url
+    def __repr__(self):
+        return f"<Request: {self.url} >"
 
     @classmethod
     def dummy(self,response,request,**kwargs):

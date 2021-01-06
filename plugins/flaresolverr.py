@@ -4,7 +4,8 @@ import atexit
 import signal
 import json
 import random
-from urllib.parse import urlparse
+from urllib.parse import urlparse,urlencode
+from modules.utils import url_join
 from modules.logging.dump import html
 
 class FlaresolverrResponse:
@@ -49,22 +50,33 @@ class FlaresolverrSession:
                 session=self.id
             )
         )
-    def request(self,url,cookies={}):
+    def request(self,url,cookies={},post=None,referrer=None):
         body = dict(
             cmd="request.get",
             url=url,
             session=self.id,
             cookies=FlaresolverrSession.parseCookies(cookies,url)
         )
+
+        if post is not None:
+            body["cmd"] = "request.post"
+            body["postData"] = FlaresolverrSession.serializePostData(post)
+            body["headers"] = {"Content-Type": "application/x-www-form-urlencoded"}
+        
+        if referrer is not None:
+            body["headers"] = body.get("headers",{})
+            body["headers"]["Referer"] = referrer
+
         res = requests.post(
             self.location,
             headers=self.headers,
             json=body
         )
         res = res.json()
-        if "solution" not in res:
-            html( json.dumps()  + "\n" + json.dumps(res))
         return FlaresolverrResponse(res["solution"])
+    @classmethod
+    def serializePostData(self,postData):
+        return urlencode(postData)
     @classmethod
     def parseCookies(self,cookies_dict,url):
         cookies_list = []
@@ -81,7 +93,9 @@ class FlaresolverrRequest(Request):
         url,
         callback=None,
         pass_on={},
-        cookies={}
+        cookies={},
+        post=None,
+        referrer=None
     ):
         Request.__init__(
             self,
@@ -89,13 +103,29 @@ class FlaresolverrRequest(Request):
             callback=callback,
             pass_on=pass_on
         )
+        self.post = post
         self.cookies = cookies
+        self.referrer = referrer
     def get_response(self, session):
-        response = session.request(self.url,self.cookies)
+        response = session.request(
+            self.url,
+            cookies=self.cookies,
+            post=self.post,
+            referrer=self.referrer
+        )
         return response
+    def __repr__(self):
+        return f"<Request: {self.url} Cookies={self.cookies} >"
+
 class FlaresolverrScraper(Scraper):
     def __init__(self,location,base=None, agent=None ):
         self.__session = FlaresolverrSession(location,agent=agent)
         Scraper.__init__(self,base)
     async def startRequest(self,request):
         request.start(self.__session)
+    def follow(self, request: Request):
+        if self.base is None:
+            raise Exception("Cannot follow, base is None")
+        if request.referrer is not None:
+            request.referrer = url_join(self.base,request.referrer)
+        Scraper.follow(self,request)

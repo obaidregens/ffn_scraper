@@ -1,5 +1,6 @@
 import math
 from data.rating_map import ratingNums
+from modules.story import parse as parseStory
 
 def Author(sel,uid):
     dataSend = {
@@ -11,12 +12,12 @@ def Author(sel,uid):
             "total_stories": int(sel.css("#l_st > span::text").get())
         },
         "total": {
-            "chapters": 0,
-            "words":    0,
-            "favs":     0,
-            "follows":  0,
-            "reviews":  0,
-            "rating":   0
+            "Chapters": 0,
+            "Words":    0,
+            "Favs":     0,
+            "Follows":  0,
+            "Reviews":  0,
+            "Rated":   0
         },
         "newest": {},
         "oldest": {},
@@ -27,43 +28,32 @@ def Author(sel,uid):
         
     fandoms_count = {}
     for story in sel.css("div.z-list.mystories"):
-        raw_tags_string = ''.join(story.css('.z-padtop2.xgray::text,.z-padtop2.xgray *::text').getall())
-        # Remove Crossover
-        if raw_tags_string[:12] == "Crossover - ":
-            raw_tags_string = raw_tags_string[12:]
-        # Remove Fandom
-        raw_tags_string = raw_tags_string[len(story.attrib["data-category"]) + len(" - "):]
+        Tags = parseStory(story)["Tags"]
+        print(Tags)
+        Tags["Fandom"] = story.attrib["data-category"]
+        Tags["Updated"] = int(story.attrib["data-dateupdate"])
+        Tags["Published"] = int(story.attrib["data-datesubmit"])
 
-        tags = raw_tags_string.split(' - ')
-        tags_dict = {}
-        tags_dict["fandom"] = story.attrib["data-category"]
-        tags_dict["updated"] = int(story.attrib["data-dateupdate"])
-        tags_dict["published"] = int(story.attrib["data-datesubmit"])
-        tags_dict["language"] = tags.pop(1)
-        if 'Chapters: ' not in tags[1]:
-            tags_dict['genre'] = tags.pop(1)
+        # Genre
+        if len(Tags.get("Genre",[])) < 1:
+            Tags["Genre"] = "General"
         else:
-            tags_dict["genre"] = "General"
-        for tag in tags:
-            sp = tag.split(": ")
-            if (len(sp) < 2):
+            Tags["Genre"] = "/".join(Tags["Genre"])
+
+        dataSend["total"]['Rated'] += ratingNums[Tags["Rated"]]
+        for tagName in ["Chapters","Words","Reviews","Favs","Follows"]:
+            if tagName not in Tags:
                 continue
-            if sp[0] == "Rated":
-                dataSend["total"]['rating'] += ratingNums[sp[1]]
-                tags_dict['rating'] = sp[1]
-            if sp[0] in ["Chapters","Words","Reviews","Favs","Follows"]:
-                field = sp[0].lower()
-                value = int(sp[1].replace(',',''))
-                dataSend["total"][field] += value
-                tags_dict[field] = value
+            dataSend["total"][tagName] += Tags[tagName]
+
         # Tags Collected
-        if (tags_dict["updated"] > dataSend["newest"].get("updated",0)):
-            dataSend["newest"] = tags_dict
-        if (tags_dict.get("favs",0) > dataSend["top_favs"].get("favs",0)):
-            dataSend["top_favs"] = tags_dict
-        if (tags_dict["published"] < dataSend["oldest"].get("published",math.inf)):
-            dataSend["oldest"] = tags_dict
-        fandoms_count[tags_dict["fandom"]] = fandoms_count.get(tags_dict["fandom"],0) + 1 
+        if (Tags["Updated"] > dataSend["newest"].get("Updated",0)):
+            dataSend["newest"] = Tags
+        if (Tags.get("Favs",0) > dataSend["top_favs"].get("Favs",0)):
+            dataSend["top_favs"] = Tags
+        if (Tags["Published"] < dataSend["oldest"].get("Published",math.inf)):
+            dataSend["oldest"] = Tags
+        fandoms_count[Tags["Fandom"]] = fandoms_count.get(Tags["Fandom"],0) + 1 
 
     for fandom,count in fandoms_count.items():
         if "most_fandom" not in dataSend["data"]:
@@ -73,5 +63,5 @@ def Author(sel,uid):
             dataSend["data"]["most_fandom"] = fandom
     for attr in ["newest","oldest","top_favs"]:
         if dataSend[attr] == {}:
-            dataSend[attr] = tags_dict
+            dataSend[attr] = Tags
     return dataSend
