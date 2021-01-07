@@ -4,15 +4,14 @@ import atexit
 import logging
 from functools import partial
 from modules.logging.main import log
-from modules.utils import url_join
+from urllib.parse import urljoin
 from scraper import Request
 import traceback
 from pprint import pprint
 
 class Scraper:
-    requests_per_second = 4
-    def __init__(self,base = None):
-        self.base = base
+    requests_per_second = 1
+    def __init__(self):
         self.__logfile = "thread-" + str(time()) + ".log"
         self.__queue = []
         self.__running = []
@@ -24,10 +23,9 @@ class Scraper:
     def add(self, request: Request):
         request.callback = partial(self.closeRequest,request.callback)
         self.__queue.append(request)
-    def follow(self, request: Request):
-        if self.base is None:
-            raise Exception("Cannot follow, base is None")
-        request.url = url_join(self.base,request.url)
+    def follow(self, url, request: Request):
+        request.referrer = url
+        request.url = urljoin(url,request.url)
         self.add(request)
     def isEmpty(self):
         return len(self.__queue) < 1
@@ -107,7 +105,7 @@ class Scraper:
                     req.began = time()
                     self.__running.append(req)
                     try:
-                        req.running_task = asyncio.get_event_loop().create_task(self.startRequest(req))
+                        req.running_task = await self.startRequest(req)
                     except Exception as e:
                         self.restartRequest(req)
                         log(f"""

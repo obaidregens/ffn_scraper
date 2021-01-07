@@ -29,7 +29,6 @@ def Author(sel,uid):
     fandoms_count = {}
     for story in sel.css("div.z-list.mystories"):
         Tags = parseStory(story)["Tags"]
-        print(Tags)
         Tags["Fandom"] = story.attrib["data-category"]
         Tags["Updated"] = int(story.attrib["data-dateupdate"])
         Tags["Published"] = int(story.attrib["data-datesubmit"])

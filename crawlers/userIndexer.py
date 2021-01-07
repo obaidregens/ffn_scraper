@@ -1,5 +1,10 @@
 def main():
-    PROXY_IP = "http://45.79.151.177:8191/v1"
+    import settings
+
+    flaresolverr_location = getattr(settings,"INDEXER_FLARESOLVERR_PROXY",None)
+    if flaresolverr_location is None:
+        raise Exception("No INDEXER_FLARESOLVERR_PROXY specified")    
+
     MAX_PAGES = 50
     
     from scrapy.selector import Selector
@@ -7,14 +12,13 @@ def main():
     from modules.users.connection import shouldScrape,startScrape,insertScrape
     from modules.users.parse import Author as parseAuthor
     from plugins.flaresolverr import (
-        FlaresolverrScraper as Scraper,
-        FlaresolverrRequest as Request
+        Scraper,
+        Request
     )
     from modules.logging.main import log
 
     s = Scraper(
-        PROXY_IP,
-        base="https://www.fanfiction.net/"
+        flaresolverr_location
     )
     def parseProfile(response, request, uid):
         sel = Selector(text=response.text)
@@ -60,7 +64,7 @@ def main():
                 continue
             startScrape(Author_ID)
             log("Will Scrape: " + str(Author_ID))
-            s.follow(Request(
+            s.follow(request.url,Request(
                 "/u/" + str(Author_ID),
                 callback=parseProfile,
                 pass_on={
@@ -72,7 +76,7 @@ def main():
         next_pg_attr = sel.xpath('//*[@id="content_wrapper_inner"]/center[1]/a[contains(text(),\'Next »\')]').attrib
         if ("href" in next_pg_attr) & (pg < MAX_PAGES):
             next_pg = next_pg_attr['href']
-            s.follow(Request(
+            s.follow(request.url,Request(
                 next_pg,
                 callback=Evaluate,
                 pass_on={"fandom": fandom}
@@ -88,9 +92,9 @@ def main():
         "tv/Supernatural/",
         "tv/Glee/"
     ]
-    for url in start_urls:
-        s.follow(Request(
-            "/" + url + "?&srt=5&r=10&t=4",
+    for fandom in start_urls:
+        s.add(Request(
+            f"https://www.fanfiction.net/{fandom}?&srt=5&r=10&t=4",
             callback=Evaluate,
-            pass_on={"fandom": url}
+            pass_on={"fandom": fandom}
         ))

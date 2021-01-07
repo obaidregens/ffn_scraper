@@ -6,16 +6,17 @@ def main():
     from modules.logging.main import log
     from data import message
     from plugins.flaresolverr import (
-        FlaresolverrScraper as Scraper,
-        FlaresolverrRequest as Request
+        Scraper,
+        Request
     )
     import settings
-    
 
-    PROXY_IP = "http://23.92.26.19:8191/v1"
+    flaresolverr_location = getattr(settings,"SENDER_FLARESOLVERR_PROXY",None)
+    if flaresolverr_location is None:
+        raise Exception("No SENDER_FLARESOLVERR_PROXY specified")    
+
     s = Scraper(
-        PROXY_IP,
-        base="https://www.fanfiction.net/"
+        flaresolverr_location
     )
 
     authorIds = toMessage()
@@ -32,7 +33,7 @@ def main():
     last_sent = {}
     def continue_request():
         if len(queue) > 0:
-            s.follow(queue.pop(0))
+            s.add(queue.pop(0))
     
     def Submit(response,request,authorId,username):
         last_sent[request.cookies["funn"]] = time.time()
@@ -67,12 +68,11 @@ def main():
         postData["subject"] = message.subject.replace("###USERNAME###",username)
         postData["message"] = message.content.replace("###USERNAME###",username)
 
-        s.follow(Request(
+        s.follow(request.url,Request(
             f"/pm2/post.php?uid={authorId}",
             cookies=request.cookies,
             callback=Submit,
             pass_on=dict(authorId=authorId,username=username),
-            referrer=f"/pm2/post.php?uid={authorId}",
             post=postData
         ))
     print("Full: " + str(len(authorIds)))
@@ -80,9 +80,9 @@ def main():
         index = int(int((len(queue)/5*10)%10)/2)
         cookies = rotating_cookies[index]
         queue.append(Request(
-            f"/pm2/post.php?uid={authorId}",
+            f"https://www.fanfiction.net/pm2/post.php?uid={authorId}",
             cookies=cookies,
             callback=NewMessage,
             pass_on=dict(authorId=authorId,username=username)
         ))
-    s.follow(queue.pop(0))
+    s.add(queue.pop(0))

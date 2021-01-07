@@ -2,21 +2,23 @@ def main():
     from scrapy.selector import Selector
     from modules.story import parse
     from plugins.flaresolverr import (
-        FlaresolverrScraper as Scraper,
-        FlaresolverrRequest as Request
+        Scraper,
+        Request
     )
+    import settings
+    flaresolverr_location = getattr(settings,"INDEXER_FLARESOLVERR_PROXY",None)
+    if flaresolverr_location is None:
+        raise Exception("No INDEXER_FLARESOLVERR_PROXY specified")
 
-    PROXY_IP = "http://45.79.151.177:8191/v1"
     s = Scraper(
-        PROXY_IP,
-        base="https://www.fanfiction.net/"
+        flaresolverr_location
     )
     def Author(response,request):
         sel = Selector(text=response.text)
         story = parse(sel.css('div.z-list.mystories:last-child')[0])
         print(story)
 
-    s.follow(Request(
-        "/u/11675501",
+    s.add(Request(
+        "https://www.fanfiction.net/u/11675501",
         callback=Author
     ))

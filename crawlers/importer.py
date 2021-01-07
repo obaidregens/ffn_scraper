@@ -1,25 +1,21 @@
 def main():
     import settings
+
+    flaresolverr_location = getattr(settings,"IMPORTER_FLARESOLVERR_PROXY",None)
+    if flaresolverr_location is None:
+        raise Exception("No IMPORTER_FLARESOLVERR_PROXY specified")
+
     from scrapy.selector import Selector
     from modules.author import parse as parseAuthor
     from modules.load import getCurrent
     import modules.story as Story
-    from plugins.cloudscraper import (
-        CloudscraperRequest as Request,
-        CloudscraperScraper as Scraper
+    from plugins.flaresolverr import (
+        Request,
+        Scraper
     )
 
-    proxies = None
-    if getattr(settings,"USE_PROXY",None) is not None:
-        proxies = {"http": settings.USE_PROXY, "https": settings.USE_PROXY}
     s = Scraper(
-        base="https://www.fanfiction.net/",
-        browser={
-            'browser': 'chrome',
-            'platform': 'windows',
-            'mobile': False
-        },
-        proxies=proxies
+        flaresolverr_location
     )
 
     def Chapter(response, request, storyData):
@@ -30,8 +26,8 @@ def main():
         if chap["next"] == False:
             Story.insert(chap["storyData"])
         else:
-            s.follow(Request(
-                url=chap["next"],
+            s.follow(request.url,Request(
+                chap["next"],
                 callback=Chapter,
                 pass_on={"storyData": storyData}
             ))
@@ -39,15 +35,15 @@ def main():
         sel = Selector(text=response.text)
         stories = parseAuthor(sel)
         for story in stories:
-            s.follow(Request(
-                url=story["url"],
+            s.follow(request.url,Request(
+                story["url"],
                 pass_on={"storyData": story["story"]},
                 callback=Chapter
             ))
 
-    author_urls = [ ("https://www.fanfiction.net/u/" + str(author_ID) ) for author_ID in getCurrent() ]
+    author_urls = [ f"https://www.fanfiction.net/u/{author_ID}" for author_ID in getCurrent() ]
     for author_url in author_urls:
         s.add(Request(
-            url=author_url,
+            author_url,
             callback=Authors
         ))

@@ -30,7 +30,6 @@ def notify(chapter_id):
         log("No SITE_DIR specified")
         return False
     fn = make_way(url_join(site_dir,f"/temp_notifications/notifications-{start_time}.jsonl"))
-    print(fn)
     with open(fn,"a+") as fdump:
         json_object = json.dumps({
             "chapter_id": chapter_id,

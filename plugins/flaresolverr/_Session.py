@@ -1,19 +1,11 @@
-from scraper import Request,Scraper
 import requests
-import atexit
-import signal
-import json
 import random
+import json
+import atexit
 from urllib.parse import urlparse,urlencode
-from modules.utils import url_join
-from modules.logging.dump import html
 
-class FlaresolverrResponse:
-    def __init__(self, solution):
-        self.status_code = solution["headers"].get("status",0)
-        self.cookies = solution["cookies"]
-        self.headers = solution["headers"]
-        self.text = solution["response"]
+from plugins.flaresolverr import Response
+
 class FlaresolverrSession:
     def __init__(self,location,agent=None):
         if agent is None:
@@ -73,7 +65,7 @@ class FlaresolverrSession:
             json=body
         )
         res = res.json()
-        return FlaresolverrResponse(res["solution"])
+        return Response(res["solution"])
     @classmethod
     def serializePostData(self,postData):
         return urlencode(postData)
@@ -87,45 +79,3 @@ class FlaresolverrSession:
                 domain=urlparse(url).netloc
             ))
         return cookies_list
-class FlaresolverrRequest(Request):
-    def __init__(
-        self,
-        url,
-        callback=None,
-        pass_on={},
-        cookies={},
-        post=None,
-        referrer=None
-    ):
-        Request.__init__(
-            self,
-            url=url,
-            callback=callback,
-            pass_on=pass_on
-        )
-        self.post = post
-        self.cookies = cookies
-        self.referrer = referrer
-    def get_response(self, session):
-        response = session.request(
-            self.url,
-            cookies=self.cookies,
-            post=self.post,
-            referrer=self.referrer
-        )
-        return response
-    def __repr__(self):
-        return f"<Request: {self.url} Cookies={self.cookies} >"
-
-class FlaresolverrScraper(Scraper):
-    def __init__(self,location,base=None, agent=None ):
-        self.__session = FlaresolverrSession(location,agent=agent)
-        Scraper.__init__(self,base)
-    async def startRequest(self,request):
-        request.start(self.__session)
-    def follow(self, request: Request):
-        if self.base is None:
-            raise Exception("Cannot follow, base is None")
-        if request.referrer is not None:
-            request.referrer = url_join(self.base,request.referrer)
-        Scraper.follow(self,request)

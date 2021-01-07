@@ -1,4 +1,9 @@
 def main():
+    import settings
+    flaresolverr_location = getattr(settings,"LINKING_FLARESOLVERR_PROXY",None)
+    if flaresolverr_location is None:
+        raise Exception("No LINKING_FLARESOLVERR_PROXY specified")
+
     from scrapy.selector import Selector
     from time import time
     from modules.mysql_connection import (
@@ -8,10 +13,11 @@ def main():
     )
     from modules.logging.main import log
     from plugins.flaresolverr import (
-        FlaresolverrScraper as Scraper,
-        FlaresolverrRequest as Request
+        Scraper,
+        Request
     )
-    import settings
+    from modules.logging.dump import html
+
     cookies = settings.creds.ffn.cookies
 
     t = time()
@@ -80,11 +86,11 @@ def main():
         return True
 
     s = Scraper(
-        getattr(settings,"LINKING_FLARESOLVERR_PROXY",None),
-        base="https://www.fanfiction.net/"
+        flaresolverr_location
     )
     def Conversation(response, request):
         sel = Selector(text=response.text)
+        html(response.text)
         response = None
         last_msg = sel.css('.round8.bubbledRight')[-1]
         code = last_msg.xpath('img[1]/following-sibling::text()').get()
@@ -96,14 +102,14 @@ def main():
         response = None
         convs = sel.css('#content_wrapper_inner > table .bubbledNNormal > a:nth-of-type(2)::attr(href)').getall()
         for conv in convs:
-            s.follow(Request(
-                "/pm2/"+conv,
+            s.follow(request.url,Request(
+                conv,
                 callback=Conversation,
                 cookies=cookies
             ))
 
-    s.follow(Request(
-        "/pm2/inbox.php",
+    s.add(Request(
+        "https://www.fanfiction.net/pm2/inbox.php",
         cookies=cookies,
         callback=Inbox
     ))
