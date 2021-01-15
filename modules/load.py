@@ -1,7 +1,10 @@
+from time import time
+
 import settings
 from modules.mysql_connection import db,placeholder
 from modules.logging.main import make_way
 from modules.logging.cache import path as cache_path
+
 
 sql_cmd = """
 SELECT
@@ -36,18 +39,33 @@ for row in db.fetchall():
         "chapters": chapters
     }
 
+after_time = int(time() - 6*60*60)
+
+db.execute(f"""
+SELECT connection_user
+FROM user_connections
+WHERE status = 'verified'
+AND connection_user NOT IN (
+    SELECT DISTINCT type_by_id FROM notifications
+    WHERE notification_type = 'account_verified'
+)
+AND link_timestamp > {after_time}
+""")
+newly_verified = [int(tup[0]) for tup in db.fetchall()]
+
 sql_cmd = """
 SELECT connection_user,user_id
 FROM user_connections
+WHERE status = 'verified'
 """
 if len(toImport) > 0:
-    sql_cmd += f"WHERE connection_user NOT IN ({placeholder(len(toImport))})"
+    sql_cmd += f"AND connection_user NOT IN ({placeholder(len(toImport))})"
 db.execute(sql_cmd,list(toImport.keys()))
 for row in db.fetchall():
     try:
         ffn_user_id = int(row[0])
-    except:
-        continue
+    except Exception: continue
+
     toImport[ffn_user_id] = {
         "stories": {},
         "user_id": int(row[1])
@@ -74,6 +92,10 @@ def getCurrent():
     return newAuthors
 def getStoryIds(_ffn_user):
     return toImport[int(_ffn_user)]["stories"].keys()
+
 def getUserId(_ffn_user):
     return toImport[int(_ffn_user)]["user_id"]
+
+def isNewlyVerified(_ffn_user):
+    return int(_ffn_user) in newly_verified
 

@@ -70,16 +70,8 @@ def main():
             [t, user_codes[user]["ID"]]
         )
         user_id = user_codes[user]["user_id"]
-        dbInsert("notifications",{
-            "user_id": user_id,
-            "notification_type": "account_verified",
-            "type_of": "user",
-            "type_of_id": user_id,
-            "type_by": "ffn_user",
-            "type_by_id": user,
-            "email_status": "none",
-            "timestamp": time()
-        })
+
+        # Verification Notification Will Be Added Later When First Stories are imported
 
         log("Succesfully Verified!",fn)
         log("")

@@ -47,3 +47,16 @@ def chapter(chapter_id):
             "time_added": time()
         })
         fdump.write(json_object + "\n")
+
+def verified(author_ID):
+    user_id = getUserId(author_ID)
+    dbInsert("notifications",{
+        "user_id": user_id,
+        "notification_type": "account_verified",
+        "type_of": "user",
+        "type_of_id": user_id,
+        "type_by": "ffn_user",
+        "type_by_id": author_ID,
+        "email_status": "none",
+        "timestamp": time()
+    })

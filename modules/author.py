@@ -1,7 +1,8 @@
-from modules.load import toImport
+from modules.load import toImport,isNewlyVerified
 from modules.story import parse as parseStory,addNewRow as addStory
 from modules.logging.story import isErrored
 from modules.logging.author import log as author_log
+from modules import notifications
 
 def parse(response):
     Author_ID = int(response.css("#content_wrapper_inner > a.pull-right:first-child").attrib["href"][8:-1])
@@ -38,7 +39,10 @@ def parse(response):
             stories.append({
                 "url": "/s/" + str(storyData["_id"]) + "/" + str(chapterStartAt),
                 "story": storyData
-            })            
+            })
+
+    if isNewlyVerified(Author_ID):    
+        notifications.verified(Author_ID)
     author_log(
         Author_ID,
         len(myStories),
