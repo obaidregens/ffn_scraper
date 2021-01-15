@@ -54,8 +54,6 @@ for row in db.fetchall():
     }
 
 
-all_imported = []
-
 def getCurrent():
     fn = make_way(cache_path("authors-load.json"))
     n = getattr(settings,"AUTHOR_LOAD_CHUNK",50)
@@ -78,3 +76,4 @@ def getStoryIds(_ffn_user):
     return toImport[int(_ffn_user)]["stories"].keys()
 def getUserId(_ffn_user):
     return toImport[int(_ffn_user)]["user_id"]
+

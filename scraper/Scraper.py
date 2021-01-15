@@ -7,7 +7,8 @@ from modules.logging.main import log
 from urllib.parse import urljoin
 from scraper import Request
 import traceback
-from pprint import pprint
+
+import settings
 
 class Scraper:
     requests_per_second = 1
@@ -38,11 +39,11 @@ class Scraper:
     def restartRequest(self, req):
         try:
             self.__running.remove(req)
-        except:
-            pass
+        except: pass
         req.began = 0
         req.ended = 0
-        self.__queue.append(req)
+        if getattr(settings,"RESTART_REQUESTS",False):
+            self.__queue.append(req)
     def close(self):
         self.__closed = True
     def awaitAll(self):

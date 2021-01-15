@@ -2,16 +2,22 @@
 import lxml.html.clean as clean
 from datetime import datetime
 from time import time
-import json
 # Data
 from data.rating_map import rating_map
 # Modules
-from modules.logging.story import error as storyError,success as storySuccess
+from modules.logging.story import (
+    error as storyError,
+    success as storySuccess
+)
 from modules.logging.dump import html as html_dump
-from modules.logging.main import log,make_way
-from modules.load import getUserId,getStoryIds,all_imported
+from modules.logging.main import log
+from modules.load import getUserId
+from modules.notifications import (
+    importQueue,
+    chapter as notify
+)
 from modules.characters import find_fandom
-from modules.utils import str_word_count,url_join
+from modules.utils import str_word_count
 # SQL
 from modules.mysql_connection import (
     db,
@@ -21,22 +27,6 @@ from modules.mysql_connection import (
 )
 import modules.terms as terms
 import modules.pairings as pairings
-import settings
-
-def notify(chapter_id):
-    site_dir = getattr(settings,"SITE_DIR",None)
-    start_time = getattr(settings,"START_TIME",time())
-    if site_dir is None:
-        log("No SITE_DIR specified")
-        return False
-    fn = make_way(url_join(site_dir,f"/temp_notifications/notifications-{start_time}.jsonl"))
-    with open(fn,"a+") as fdump:
-        json_object = json.dumps({
-            "chapter_id": chapter_id,
-            "time_added": time()
-        })
-        fdump.write(json_object + "\n")
-    
 
 def insert(story):
     character_fandoms = {}
@@ -236,15 +226,7 @@ def insert(story):
     db.executemany(metaSql,metaVal)
 
     if story["Reimport"] == True or story["Existing"] == False:
-        # Now Let's add a notification if all users stories have been done.
-        all_imported.append(str(story["_id"]))
-        if len(set( getStoryIds(author_ID) - set(all_imported) )) < 1:
-            db.execute(
-                """
-                INSERT INTO notifications (user_id,notification_type,type_of,type_of_id,type_by,type_by_id,email_status,timestamp)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                [user_id,'stories_imported','user',user_id,'ffn_user',author_ID,'none',current_time]
-            )
+        importQueue(author_ID,current_time)
         sql_connection.commit()
     if story["Existing"] != False:
         # Update Words

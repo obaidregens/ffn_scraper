@@ -6,6 +6,7 @@ def main():
         raise Exception("No IMPORTER_FLARESOLVERR_PROXY specified")
 
     from scrapy.selector import Selector
+
     from modules.author import parse as parseAuthor
     from modules.load import getCurrent
     import modules.story as Story
@@ -31,6 +32,7 @@ def main():
                 callback=Chapter,
                 pass_on={"storyData": storyData}
             ))
+    
     def Authors(response, request):
         sel = Selector(text=response.text)
         stories = parseAuthor(sel)

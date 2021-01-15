@@ -80,6 +80,8 @@ SITE_DIR = "/Users/obaid/Documents/serve/"
 from time import time
 START_TIME = time()
 
+RESTART_REQUESTS = False
+
 IMPORTER_FLARESOLVERR_PROXY = "http://173.255.228.35:8191/v1"
 LINKING_FLARESOLVERR_PROXY = "http://192.46.223.28:8191/v1"
 #INDEXER_FLARESOLVERR_PROXY = None
