@@ -3,7 +3,7 @@ def main():
 
     flaresolverr_location = getattr(settings,"INDEXER_FLARESOLVERR_PROXY",None)
     if flaresolverr_location is None:
-        raise Exception("No INDEXER_FLARESOLVERR_PROXY specified")    
+        raise Exception("No INDEXER_FLARESOLVERR_PROXY specified")
 
     MAX_PAGES = 50
     
@@ -90,7 +90,22 @@ def main():
         "anime/Hetalia-Axis-Powers/",
         "anime/Inuyasha/",
         "tv/Supernatural/",
-        "tv/Glee/"
+        "tv/Glee/",
+        "cartoon/Avatar-Last-Airbender/",
+        # Crossovers
+        "Harry-Potter-Crossovers/224/0/",
+        "Naruto-Crossovers/1402/0/",
+        "Inuyasha-Crossovers/436/0/",
+        "Bleach-Crossovers/1758/0/",
+        "Avatar-Last-Airbender-Crossovers/2002/0/",
+        "Pokémon-Crossovers/80/0/",
+        "Avengers-Crossovers/9786/0/",
+        "Rise-of-the-Guardians-Crossovers/10112/0/",
+        "Frozen-Crossovers/10896/0/",
+        "Doctor-Who-Crossovers/21/0/",
+        "Supernatural-Crossovers/2237/0/",
+        "Sherlock-Crossovers/7190/0/",
+        "Buffy-The-Vampire-Slayer-Crossovers/13/0/"
     ]
     for fandom in start_urls:
         s.add(Request(

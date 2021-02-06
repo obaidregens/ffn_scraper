@@ -11,6 +11,8 @@ def main():
     )
     import settings
 
+    print(len(toMessage()))
+
     flaresolverr_location = getattr(settings,"SENDER_FLARESOLVERR_PROXY",None)
     if flaresolverr_location is None:
         raise Exception("No SENDER_FLARESOLVERR_PROXY specified")    

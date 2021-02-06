@@ -11,12 +11,12 @@ from modules.utils import url_join
 
 import settings
 
-all_imported = []
+all_imported = {}
 
 def importQueueAdd():
     log("Imported Queue Added")
     log(all_imported)
-    for author_ID,_time in all_imported:
+    for author_ID,_time in all_imported.items():
         user_id = getUserId(author_ID)        
         dbInsert("notifications",{
             "user_id": user_id,
@@ -32,7 +32,7 @@ atexit.register(importQueueAdd)
 
 def importQueue(author_ID,_time):
     log(f"Imported Notifications: {author_ID}")
-    all_imported.append([author_ID,_time])
+    all_imported[author_ID] = _time
 
 def chapter(chapter_id):
     site_dir = getattr(settings,"SITE_DIR",None)

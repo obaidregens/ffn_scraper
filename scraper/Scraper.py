@@ -13,7 +13,7 @@ import settings
 class Scraper:
     requests_per_second = 1
     def __init__(self):
-        self.__logfile = "thread-" + str(time()) + ".log"
+        self.__logfile = f"thread-{time()}.log"
         self.__queue = []
         self.__running = []
         self.__calling = []
@@ -21,6 +21,9 @@ class Scraper:
         self.__main_task = asyncio.get_event_loop().create_task(self.run())
         self.__closed = False
         atexit.register(self.awaitAll)
+    def log(self, text):
+        if getattr(settings,"LOG_THREAD",True):
+            log(text,self.__logfile)
     def add(self, request: Request):
         request.callback = partial(self.closeRequest,request.callback)
         self.__queue.append(request)
@@ -89,16 +92,16 @@ class Scraper:
         while not self.__closed or self.running() or self.queued() or self.called():
             if not self.isEmpty():
                 in_last_second = self.running()
-                log("",self.__logfile)
-                log(time(),self.__logfile)
-                log(f'{in_last_second} Running',self.__logfile)
+                self.log("")
+                self.log(time())
+                self.log(f'{in_last_second} Running')
                 i = len(self.__ended)-1
                 while i >= 0 and in_last_second < Scraper.requests_per_second:
                     if (time() - self.__ended[i].ended) <= 1.01:
                         in_last_second += 1
                     i -= 1
-                log(f'{in_last_second} In last second',self.__logfile)
-                log("",self.__logfile)
+                self.log(f'{in_last_second} In last second')
+                self.log("")
                 for n in range(Scraper.requests_per_second - in_last_second):
                     if len(self.__queue) < 1:
                         break
